@@ -1,0 +1,31 @@
+# dependencies
+node_modules/
+
+# IDE
+.idea/
+.awcache/
+.vscode/
+.devcontainer/
+.classpath/
+.project/
+.settings/
+*.code-workspace
+
+# Environment variables
+*.env
+
+# bundle
+dist/
+
+# misc
+.DS_Store
+lerna-debug.log
+npm-debug.log
+yarn-error.log
+/**/npm-debug.log
+*.tsbuildinfo
+
+# tests
+benchmarks/memory/
+coverage/
+.nyc_output/

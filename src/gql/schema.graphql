@@ -1,0 +1,62 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Chat {
+  id: String!
+  type: String!
+  name: String!
+  avatar_url: String
+  background_url: String
+  invitation_type: String!
+  description: String
+  created_at: Date!
+  updated_at: Date!
+  deleted_at: Date
+}
+
+type User {
+  id: String!
+  display_name: String!
+  tag: String!
+  email: String!
+  password_hash: String!
+  avatar_url: String
+  gender: String!
+  created_at: Date!
+  updated_at: Date!
+  last_active: Date!
+  status: String!
+  deleted_at: Date
+}
+
+"""Date custom scalar type"""
+scalar Date
+
+type Query {
+  users: [User!]!
+  user(id: String!): User!
+  chats: [Chat!]!
+  chat(id: String!): Chat!
+}
+
+type Mutation {
+  create(createChatInput: CreateChatInput!): Chat!
+  update(updateChatInput: UpdateChatInput!): Chat!
+  remove(id: String!): Chat!
+}
+
+input CreateChatInput {
+  type: String!
+  name: String!
+}
+
+input UpdateChatInput {
+  id: String!
+  type: String
+  name: String
+  avatar_url: String
+  background_url: String
+  invitation_type: String
+  description: String
+}
