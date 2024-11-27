@@ -3,320 +3,162 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
-model attachment {
-  id            String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  chat_id       String                 @db.Uuid
-  sender_id     String                 @db.Uuid
-  message_id    String                 @db.Uuid
-  status        attachment_status_enum @default(pending)
-  file_name     String                 @db.VarChar(255)
-  file_size     BigInt
-  file_type     String?                @db.VarChar(50)
-  file_url      String                 @db.VarChar(255)
-  thumbnail_url String?                @db.VarChar(255)
-  created_at    DateTime               @default(dbgenerated("'2024-11-24 10:48:12.759449'::timestamp without time zone")) @db.Timestamp(6)
-  updated_at    DateTime               @default(dbgenerated("'2024-11-24 10:48:12.759449'::timestamp without time zone")) @db.Timestamp(6)
-  chat          chat                   @relation(fields: [chat_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  message       message                @relation(fields: [message_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  user          user                   @relation(fields: [sender_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@index([chat_id, message_id], map: "idx_attachment_chat_message")
-  @@index([sender_id], map: "idx_attachment_sender")
+model User {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  displayName  String    @db.String
+  tag          String    @default("SORA01") @db.String
+  email        String    @unique @db.String
+  passwordHash String    @db.String
+  avatarUrl    String?   @db.String
+  gender       String    @default("prefer_not_to_say") @db.String
+  createdAt    DateTime  @default(now()) @db.Timestamp()
+  updatedAt    DateTime  @default(now()) @db.Timestamp()
+  lastActive   DateTime  @default(now()) @db.Timestamp()
+  status       String    @default("offline") @db.String
+  deletedAt    DateTime? @db.Timestamp()
 }
 
-model audit_log {
-  id          String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  timestamp   DateTime       @default(now()) @db.Timestamp(6)
-  user_id     String         @db.Uuid
-  level       log_level_enum @default(info)
-  message     String
-  context     Json?
-  action      String         @db.VarChar(100)
-  target_id   String         @db.Uuid
-  target_type String         @db.VarChar(50)
-  user        user           @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model Chat {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  type           String    @default("dm") @db.String
+  name           String    @db.String
+  avatarUrl      String?   @db.String
+  backgroundUrl  String?   @db.String
+  invitationType String    @default("open") @db.String
+  description    String?   @db.String
+  createdAt      DateTime  @default(now()) @db.Timestamp()
+  updatedAt      DateTime  @default(now()) @db.Timestamp()
+  deletedAt      DateTime? @db.Timestamp()
 }
 
-model banned_word {
-  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  chat_id    String   @db.Uuid
-  regex      String   @unique
-  created_at DateTime @default(now()) @db.Timestamp(6)
-  updated_at DateTime @default(now()) @db.Timestamp(6)
-  created_by String   @db.Uuid
-  is_enabled Boolean? @default(true)
-  chat       chat     @relation(fields: [chat_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  user       user     @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model ChatUser {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  chatId      String    @db.ObjectId
+  userId      String    @db.ObjectId
+  role        String    @default("member") @db.String
+  isBanned    Boolean   @default(false)
+  bannedUntil DateTime?
+  joinedAt    DateTime  @default(now()) @db.Timestamp()
+  updatedAt   DateTime  @default(now()) @db.Timestamp()
 }
 
-model channel_subscription {
-  id            String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  chat_id       String   @db.Uuid
-  user_id       String   @db.Uuid
-  subscribed_at DateTime @default(now()) @db.Timestamp(6)
-  updated_at    DateTime @default(now()) @db.Timestamp(6)
-  chat          chat     @relation(fields: [chat_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  user          user     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@unique([chat_id, user_id], map: "idx_channel_subscription")
+model Message {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  chatId        String    @db.ObjectId
+  senderId      String    @db.ObjectId
+  content       String?   @db.String
+  contentType   String    @default("text") @db.String
+  sentAt        DateTime  @default(now()) @db.Timestamp()
+  replyTo       String?   @db.ObjectId
+  isForward     Boolean   @default(false)
+  forwardedFrom String?   @db.ObjectId
+  deletedAt     DateTime? @db.Timestamp()
 }
 
-model chat {
-  id                   String                    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  type                 chat_type_enum            @default(dm)
-  name                 String                    @db.VarChar(255)
-  avatar_url           String?                   @db.VarChar(255)
-  background_url       String?                   @db.VarChar(255)
-  invitation_type      chat_invitation_type_enum @default(open)
-  description          String?
-  created_at           DateTime                  @default(now()) @db.Timestamp(6)
-  updated_at           DateTime                  @default(now()) @db.Timestamp(6)
-  deleted_at           DateTime?                 @db.Timestamp(6)
-  attachment           attachment[]
-  banned_word          banned_word[]
-  channel_subscription channel_subscription[]
-  chat_user            chat_user[]
-  message              message[]
-  pinned_message       pinned_message[]
-  typing_status        typing_status[]
-  user_notification    user_notification[]
+model PinnedMessage {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  chatId      String    @db.ObjectId
+  messageId   String    @db.ObjectId
+  pinnedAt    DateTime  @default(now()) @db.Timestamp()
+  pinnedUntil DateTime?
 }
 
-model chat_user {
-  id           String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  chat_id      String              @db.Uuid
-  user_id      String              @db.Uuid
-  role         chat_user_role_enum @default(member)
-  is_banned    Boolean?            @default(false)
-  banned_until DateTime?           @db.Timestamp(6)
-  joined_at    DateTime            @default(now()) @db.Timestamp(6)
-  updated_at   DateTime            @default(now()) @db.Timestamp(6)
-  chat         chat                @relation(fields: [chat_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  user         user                @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@unique([chat_id, user_id], map: "idx_chat_user")
+model Attachment {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  chatId       String   @db.ObjectId
+  senderId     String   @db.ObjectId
+  messageId    String   @db.ObjectId
+  status       String   @default("pending") @db.String
+  fileName     String   @db.String
+  fileSize     String   @db.String // String for larger file sizes
+  fileType     String?  @db.String
+  fileUrl      String   @db.String
+  thumbnailUrl String?  @db.String
+  createdAt    DateTime @default(now()) @db.Timestamp()
+  updatedAt    DateTime @default(now()) @db.Timestamp()
 }
 
-model message {
-  id                                            String                    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  chat_id                                       String                    @db.Uuid
-  sender_id                                     String                    @db.Uuid
-  content                                       String?
-  content_type                                  message_content_type_enum @default(text)
-  sent_at                                       DateTime                  @default(now()) @db.Timestamp(6)
-  reply_to                                      String?                   @db.Uuid
-  is_forward                                    Boolean?                  @default(false)
-  forwarded_from                                String?                   @db.Uuid
-  deleted_at                                    DateTime?                 @db.Timestamp(6)
-  attachment                                    attachment[]
-  chat                                          chat                      @relation(fields: [chat_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  message_message_forwarded_fromTomessage       message?                  @relation("message_forwarded_fromTomessage", fields: [forwarded_from], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  other_message_message_forwarded_fromTomessage message[]                 @relation("message_forwarded_fromTomessage")
-  message_message_reply_toTomessage             message?                  @relation("message_reply_toTomessage", fields: [reply_to], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  other_message_message_reply_toTomessage       message[]                 @relation("message_reply_toTomessage")
-  user                                          user                      @relation(fields: [sender_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  message_status                                message_status[]
-  pinned_message                                pinned_message[]
-  reaction                                      reaction[]
+model MessageStatus {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  messageId   String    @db.ObjectId
+  userId      String    @db.ObjectId
+  status      String    @default("sent") @db.String
+  deliveredAt DateTime?
+  readAt      DateTime?
+  updatedAt   DateTime  @default(now()) @db.Timestamp()
 }
 
-model message_status {
-  id           String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  message_id   String              @db.Uuid
-  user_id      String              @db.Uuid
-  status       message_status_enum @default(sent)
-  delivered_at DateTime?           @db.Timestamp(6)
-  read_at      DateTime?           @db.Timestamp(6)
-  updated_at   DateTime?           @db.Timestamp(6)
-  message      message             @relation(fields: [message_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  user         user                @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@unique([message_id, user_id], map: "idx_message_status")
+model Reaction {
+  id           String @id @default(auto()) @map("_id") @db.ObjectId
+  messageId    String @db.ObjectId
+  userId       String @db.ObjectId
+  reactionType String @db.String
 }
 
-model pinned_message {
-  id           String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  chat_id      String    @db.Uuid
-  message_id   String    @db.Uuid
-  pinned_at    DateTime  @default(dbgenerated("'2024-11-24 10:48:12.759449'::timestamp without time zone")) @db.Timestamp(6)
-  pinned_until DateTime? @db.Timestamp(6)
-  chat         chat      @relation(fields: [chat_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  message      message   @relation(fields: [message_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@unique([chat_id, message_id], map: "idx_pinned_message")
+model BannedWord {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  chatId    String?  @db.ObjectId // Nullable for global bans
+  regex     String   @unique @db.String
+  createdAt DateTime @default(now()) @db.Timestamp()
+  updatedAt DateTime @default(now()) @db.Timestamp()
+  createdBy String   @db.ObjectId
+  isEnabled Boolean  @default(true)
 }
 
-model reaction {
-  id            String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  message_id    String             @db.Uuid
-  user_id       String             @db.Uuid
-  reaction_type reaction_type_enum
-  message       message            @relation(fields: [message_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  user          user               @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@index([message_id, user_id], map: "idx_reaction")
+model ChannelSubscription {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  chatId       String   @db.ObjectId
+  userId       String   @db.ObjectId
+  subscribedAt DateTime @default(now()) @db.Timestamp()
+  updatedAt    DateTime @default(now()) @db.Timestamp()
 }
 
-model system_log {
-  id         String                      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  timestamp  DateTime                    @default(now()) @db.Timestamp(6)
-  level      log_level_enum              @default(info)
-  event_type system_log_event_type_enum?
-  message    String
+model TypingStatus {
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  chatId   String  @db.ObjectId
+  userId   String  @db.ObjectId
+  isTyping Boolean @default(false)
+}
+
+model UserSetting {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  key       String   @db.String
+  value     String?  @db.String
+  createdAt DateTime @default(now()) @db.Timestamp()
+  updatedAt DateTime @default(now()) @db.Timestamp()
+}
+
+model UserNotification {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String    @db.ObjectId
+  chatId     String    @db.ObjectId
+  type       String    @db.String
+  mutedUntil DateTime?
+}
+
+model SystemLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  timestamp DateTime @default(now()) @db.Timestamp()
+  level     String   @default("info") @db.String
+  eventType String?  @db.String
+  message   String   @db.String
+  context   Json?
+  userId    String?  @db.ObjectId
+}
+
+model AuditLog {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  timestamp  DateTime @default(now()) @db.Timestamp()
+  userId     String   @db.ObjectId
+  level      String   @default("info") @db.String
+  message    String   @db.String
   context    Json?
-  user_id    String?                     @db.Uuid
-  user       user?                       @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-}
-
-model typing_status {
-  id        String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  chat_id   String  @db.Uuid
-  user_id   String  @db.Uuid
-  is_typing Boolean @default(false)
-  chat      chat    @relation(fields: [chat_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  user      user    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@unique([chat_id, user_id], map: "idx_typing_status")
-}
-
-model user {
-  id                   String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  display_name         String                 @db.VarChar(255)
-  tag                  String                 @default("SORA01") @db.VarChar(6)
-  email                String                 @unique @db.VarChar(100)
-  password_hash        String                 @db.VarChar(60)
-  avatar_url           String?                @db.VarChar(255)
-  gender               user_gender_enum       @default(prefer_not_to_say)
-  created_at           DateTime               @default(now()) @db.Timestamp(6)
-  updated_at           DateTime               @default(now()) @db.Timestamp(6)
-  last_active          DateTime               @default(now()) @db.Timestamp(6)
-  status               user_status_enum       @default(offline)
-  deleted_at           DateTime?              @db.Timestamp(6)
-  attachment           attachment[]
-  audit_log            audit_log[]
-  banned_word          banned_word[]
-  channel_subscription channel_subscription[]
-  chat_user            chat_user[]
-  message              message[]
-  message_status       message_status[]
-  reaction             reaction[]
-  system_log           system_log[]
-  typing_status        typing_status[]
-  user_notification    user_notification[]
-  user_setting         user_setting[]
-
-  @@unique([display_name, tag], map: "idx_name_tag")
-}
-
-model user_notification {
-  id          String                       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  user_id     String                       @db.Uuid
-  chat_id     String                       @db.Uuid
-  type        user_notification_type_enum?
-  muted_until DateTime?                    @db.Timestamp(6)
-  chat        chat                         @relation(fields: [chat_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  user        user                         @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@unique([user_id, chat_id], map: "idx_user_notification")
-}
-
-model user_setting {
-  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  user_id    String   @db.Uuid
-  key        String   @db.VarChar(50)
-  value      String?  @db.VarChar(255)
-  created_at DateTime @default(now()) @db.Timestamp(6)
-  updated_at DateTime @default(now()) @db.Timestamp(6)
-  user       user     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@unique([user_id, key], map: "idx_user_setting")
-}
-
-enum attachment_status_enum {
-  pending
-  sent
-  delivered
-  read
-  failed
-}
-
-enum chat_invitation_type_enum {
-  open
-  closed
-  anyone_with_link
-  add_only
-}
-
-enum chat_type_enum {
-  dm
-  group
-  channel
-}
-
-enum chat_user_role_enum {
-  member
-  moderator
-  admin
-}
-
-enum log_level_enum {
-  not_classified
-  debug
-  info
-  warning
-  error
-}
-
-enum message_content_type_enum {
-  text
-  image
-  file
-}
-
-enum message_status_enum {
-  rejected
-  sent
-  delivered
-  read
-}
-
-enum reaction_type_enum {
-  heart
-  laugh
-  wow
-  sad
-  angry
-  custom
-}
-
-enum system_log_event_type_enum {
-  user_login
-  api_error
-  contains_banned
-  unsupported_format
-}
-
-enum user_gender_enum {
-  male
-  female
-  nonbinary
-  other
-  prefer_not_to_say
-}
-
-enum user_notification_type_enum {
-  all
-  mention
-  muted
-}
-
-enum user_status_enum {
-  online
-  offline
-  afk
-  dnd
+  action     String   @db.String
+  targetId   String   @db.ObjectId
+  targetType String   @db.String
 }

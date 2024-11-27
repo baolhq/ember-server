@@ -23,6 +23,14 @@ export class UsersService {
     return user;
   }
 
+  async findOneByEmail(email: string) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new NotFoundException(`User with email ${email} not found`);
+    }
+    return user;
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   update(id: string, updateUserInput: UpdateUserInput) {
     return `This action updates a #${id} user`;

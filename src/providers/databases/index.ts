@@ -1,1 +1,1 @@
-export * from './postgres/provider.module';
+export * from './mongodb/provider.module';

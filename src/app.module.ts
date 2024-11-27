@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
-import { PostgresProviderModule } from './providers/databases';
+import { MongoDBProviderModule } from './providers/databases';
 import { GqlModule } from './gql';
+import { AuthModule } from './auth';
 
 @Module({
-  imports: [PostgresProviderModule, GqlModule],
+  imports: [MongoDBProviderModule, GqlModule, AuthModule],
   controllers: [],
   providers: [],
 })
