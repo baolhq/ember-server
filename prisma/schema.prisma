@@ -7,10 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
+model user {
   id           String    @id @default(auto()) @map("_id") @db.ObjectId
   displayName  String    @db.String
-  tag          String    @default("SORA01") @db.String
+  tag          String    @default("EMBER1") @db.String
   email        String    @unique @db.String
   passwordHash String    @db.String
   avatarUrl    String?   @db.String
@@ -22,7 +22,7 @@ model User {
   deletedAt    DateTime? @db.Timestamp()
 }
 
-model Chat {
+model chat {
   id             String    @id @default(auto()) @map("_id") @db.ObjectId
   type           String    @default("dm") @db.String
   name           String    @db.String
@@ -35,7 +35,7 @@ model Chat {
   deletedAt      DateTime? @db.Timestamp()
 }
 
-model ChatUser {
+model chatUser {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
   chatId      String    @db.ObjectId
   userId      String    @db.ObjectId
@@ -46,7 +46,7 @@ model ChatUser {
   updatedAt   DateTime  @default(now()) @db.Timestamp()
 }
 
-model Message {
+model message {
   id            String    @id @default(auto()) @map("_id") @db.ObjectId
   chatId        String    @db.ObjectId
   senderId      String    @db.ObjectId
@@ -59,7 +59,7 @@ model Message {
   deletedAt     DateTime? @db.Timestamp()
 }
 
-model PinnedMessage {
+model pinnedMessage {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
   chatId      String    @db.ObjectId
   messageId   String    @db.ObjectId
@@ -67,7 +67,7 @@ model PinnedMessage {
   pinnedUntil DateTime?
 }
 
-model Attachment {
+model attachment {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
   chatId       String   @db.ObjectId
   senderId     String   @db.ObjectId
@@ -82,7 +82,7 @@ model Attachment {
   updatedAt    DateTime @default(now()) @db.Timestamp()
 }
 
-model MessageStatus {
+model messageStatus {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
   messageId   String    @db.ObjectId
   userId      String    @db.ObjectId
@@ -92,14 +92,14 @@ model MessageStatus {
   updatedAt   DateTime  @default(now()) @db.Timestamp()
 }
 
-model Reaction {
+model reaction {
   id           String @id @default(auto()) @map("_id") @db.ObjectId
   messageId    String @db.ObjectId
   userId       String @db.ObjectId
   reactionType String @db.String
 }
 
-model BannedWord {
+model bannedWord {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   chatId    String?  @db.ObjectId // Nullable for global bans
   regex     String   @unique @db.String
@@ -109,7 +109,7 @@ model BannedWord {
   isEnabled Boolean  @default(true)
 }
 
-model ChannelSubscription {
+model channelSubscription {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
   chatId       String   @db.ObjectId
   userId       String   @db.ObjectId
@@ -117,14 +117,14 @@ model ChannelSubscription {
   updatedAt    DateTime @default(now()) @db.Timestamp()
 }
 
-model TypingStatus {
+model typingStatus {
   id       String  @id @default(auto()) @map("_id") @db.ObjectId
   chatId   String  @db.ObjectId
   userId   String  @db.ObjectId
   isTyping Boolean @default(false)
 }
 
-model UserSetting {
+model userSetting {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   userId    String   @db.ObjectId
   key       String   @db.String
@@ -133,7 +133,7 @@ model UserSetting {
   updatedAt DateTime @default(now()) @db.Timestamp()
 }
 
-model UserNotification {
+model userNotification {
   id         String    @id @default(auto()) @map("_id") @db.ObjectId
   userId     String    @db.ObjectId
   chatId     String    @db.ObjectId
@@ -141,7 +141,7 @@ model UserNotification {
   mutedUntil DateTime?
 }
 
-model SystemLog {
+model systemLog {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   timestamp DateTime @default(now()) @db.Timestamp()
   level     String   @default("info") @db.String
@@ -151,7 +151,7 @@ model SystemLog {
   userId    String?  @db.ObjectId
 }
 
-model AuditLog {
+model auditLog {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
   timestamp  DateTime @default(now()) @db.Timestamp()
   userId     String   @db.ObjectId

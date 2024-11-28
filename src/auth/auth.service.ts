@@ -19,7 +19,7 @@ export class AuthService {
     if (!user) {
       throw new NotFoundException(`User with email ${email} not found`);
     }
-    if (user.password_hash !== password) {
+    if (user.passwordHash !== password) {
       throw new UnauthorizedException();
     }
 

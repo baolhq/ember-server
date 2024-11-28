@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import * as path from 'path';
 import { MongooseModule } from '@nestjs/mongoose';
-import { ListenerService, MessageService } from '../../../listeners';
 import * as process from 'node:process';
 
 @Module({
@@ -16,6 +15,6 @@ import * as process from 'node:process';
     }),
     MongooseModule.forRoot(process.env.DATABASE_URL),
   ],
-  providers: [ListenerService, MessageService],
+  providers: [],
 })
 export class MongoDBProviderModule {}
